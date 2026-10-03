@@ -2,6 +2,7 @@
 
 Interactive Sudoku solver that accepts puzzles, validates entries, and visualizes
 backtracking step by step. Core algorithms: **Backtracking, Constraint Checking**.
+LIVE WEBSITE HERE https://sudokugit-vdbwd5hqkkzqxwuwtkq8rw.streamlit.app/
 
 ## Contents
 - `solver.py`  - algorithm core (parsing, validation, traced backtracking, replay)
