@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sudoku Solver Arena</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#eef0ff;--card:#ffffff;--ink:#1a1840;--mut:#6b6896;--line:#d3d6f5;--thick:#3b2f8f;--acc:#6d4aff;--accsoft:#e7e0ff;--given:#dbe4ff;--peer:#fff3c4;--place:#ffd93d;--back:#ff8a5c;--bad:#f43f5e;--ok:#10b981;--ba:#eaf2ff;--bb:#ffeef6;--dl:42%;--shadow:0 10px 36px rgba(109,74,255,.18)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b0a1f;--card:#15133a;--ink:#f1eeff;--mut:#a29fd6;--line:#2e2b66;--thick:#a78bfa;--acc:#a78bfa;--accsoft:#2c2570;--given:#2b3a8c;--peer:#4a3a14;--place:#b8860b;--back:#c2410c;--bad:#f43f5e;--ok:#34d399;--ba:#161b4d;--bb:#2a1650;--dl:70%;--shadow:0 10px 40px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{--bg:#0b0a1f;--card:#15133a;--ink:#f1eeff;--mut:#a29fd6;--line:#2e2b66;--thick:#a78bfa;--acc:#a78bfa;--accsoft:#2c2570;--given:#2b3a8c;--peer:#4a3a14;--place:#b8860b;--back:#c2410c;--bad:#f43f5e;--ok:#34d399;--ba:#161b4d;--bb:#2a1650;--dl:70%;--shadow:0 10px 40px rgba(0,0,0,.6)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 500px at 8% -5%,color-mix(in srgb,#ff5fa2 22%,transparent),transparent),radial-gradient(900px 600px at 100% 0%,color-mix(in srgb,#22d3ee 22%,transparent),transparent),var(--bg);background-attachment:fixed;color:var(--ink);font:15px/1.5 Inter,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100%}
+.app{max-width:1100px;margin:0 auto;padding:18px 14px 40px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+h1{margin:0;font-size:clamp(22px,4vw,30px);letter-spacing:-.02em}
+h1 span{background:linear-gradient(90deg,#6d4aff,#ec4899,#f59e0b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mut);margin:2px 0 0;font-size:14px}
+.main{display:grid;grid-template-columns:minmax(0,540px) minmax(0,1fr);gap:20px;align-items:start}
+@media(max-width:860px){.main{grid-template-columns:1fr}}
+.card{border-top:4px solid transparent;background:linear-gradient(var(--card),var(--card)) padding-box,linear-gradient(90deg,#6d4aff,#ec4899,#f59e0b,#10b981) border-box;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:var(--shadow)}
+.board{display:grid;grid-template-columns:repeat(9,1fr);aspect-ratio:1;width:100%;border:3px solid var(--thick);border-radius:12px;overflow:hidden;background:var(--card)}
+.c{--tint:var(--ba);background:var(--tint);color:hsl(var(--h,250) 75% var(--dl));font-weight:600;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,5.4vw,32px);border:1px solid var(--line);cursor:pointer;user-select:none;transition:background .12s}
+.c.rb{border-bottom:3px solid var(--thick)}.c.cb{border-right:3px solid var(--thick)}
+.c.t1{--tint:var(--bb)}
+.c.given{background:color-mix(in srgb,var(--tint) 70%,var(--acc) 30%);font-weight:800}
+.c.peer{background:color-mix(in srgb,var(--tint) 55%,var(--peer))}.c.same{background:var(--accsoft)}
+.c.cur{background:var(--place);color:#1a1840;animation:pop .25s}.c.back{background:var(--back);color:#fff;animation:pop .25s}
+.c.conf{background:var(--bad);color:#fff}
+.c.sel{box-shadow:inset 0 0 0 3px var(--acc)}
+.c.solv{font-weight:600}
+@keyframes pop{0%{transform:scale(1.18)}100%{transform:scale(1)}}
+.pad{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;margin-top:12px}
+button,select,textarea{font:inherit;color:inherit}
+button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 12px;cursor:pointer;transition:.12s}
+button:hover{border-color:var(--acc);transform:translateY(-1px)}button:disabled{opacity:.4;pointer-events:none}
+button.pri{background:linear-gradient(135deg,#6d4aff,#ec4899);border:0;color:#fff;font-weight:700;box-shadow:0 6px 18px rgba(236,72,153,.35)}
+.pad button{padding:9px 0;font-weight:600}
+select,textarea{width:100%;border:1px solid var(--line);background:var(--card);border-radius:10px;padding:8px 10px}
+textarea{font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:vertical;height:74px}
+.lbl{font-size:12px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px}
+.lbl:first-child{margin-top:0}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;padding:8px;border-radius:9px}
+.seg button.on{background:linear-gradient(135deg,#6d4aff,#a855f7);color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(109,74,255,.4)}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1}
+.msg{padding:10px 12px;border-radius:12px;font-size:14px;margin:10px 0;background:var(--accsoft)}
+.msg.err{background:color-mix(in srgb,var(--bad) 18%,transparent);color:var(--bad)}
+.msg.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.msg.warn{background:color-mix(in srgb,#f59e0b 22%,transparent)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}
+.stat:nth-child(1){background:color-mix(in srgb,#fbbf24 25%,var(--card))}.stat:nth-child(2){background:color-mix(in srgb,#fb7185 25%,var(--card))}.stat{background:var(--bg);border-radius:12px;padding:10px 12px}.stat b{display:block;font-size:24px;letter-spacing:-.02em}.stat span{font-size:12px;color:var(--mut)}
+input[type=range]{width:100%;accent-color:var(--acc)}
+.player{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-2px;margin-right:5px;border:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}th:first-child,td:first-child{text-align:left}
+.bar{margin:8px 0}.bar .t{font-size:12px;color:var(--mut);margin-bottom:3px}
+.bar .b{border-radius:8px;height:18px;border-radius:6px;min-width:3px;margin-bottom:4px;font-size:11px;color:#fff;padding:0 6px;line-height:18px;white-space:nowrap}
+.hide{display:none}
+.chead{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-top:12px;font-size:15px}
+.chip{font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--accsoft)}
+.chip.ok{background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok)}.chip.bad{background:color-mix(in srgb,var(--bad) 22%,transparent);color:var(--bad)}
+.prog{height:8px;border-radius:99px;background:var(--bg);overflow:hidden;margin:10px 0}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6d4aff,#ec4899,#f59e0b);transition:width .3s}
+.hint{display:flex;flex-direction:column;gap:5px;font-size:13px;color:var(--mut);margin-bottom:8px}
+.hint b{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--acc);color:#fff;font-size:12px;margin-right:8px}
+.cnt{font-size:13px;color:var(--mut);margin-bottom:8px}.cnt b{font-size:20px;color:var(--ink)}
+details{margin-top:10px}summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--acc)}
+.c.sel{background:color-mix(in srgb,var(--tint) 60%,var(--acc) 40%);box-shadow:inset 0 0 0 3px var(--acc),inset 0 0 16px color-mix(in srgb,var(--acc) 60%,transparent)}
+.pad button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:7px 0 5px;font-size:19px;font-weight:800;line-height:1.1;color:hsl(var(--h,250) 75% var(--dl));background:color-mix(in srgb,hsl(var(--h,250) 90% 60%) 14%,var(--card));border-color:color-mix(in srgb,hsl(var(--h,250) 80% 60%) 40%,var(--line))}
+.pad button small{font-size:10px;font-weight:500;color:var(--mut)}.pad button.done{opacity:.3}
+.cpanel{border:2px dashed var(--acc);border-radius:14px;padding:0 12px 12px;margin-top:10px;background:color-mix(in srgb,var(--accsoft) 40%,transparent)}
+</style></head><body>
+<div class="app">
+<header><div><h1>🧩 Sudoku <span>Solver Arena</span></h1><p class="sub">Backtracking + constraint checking, visualized one decision at a time.</p></div>
+<button id="theme" class="pri" title="Switch light / dark mode">🌙 Dark mode</button></header>
+<div class="main">
+<div>
+ <div class="card"><div class="board" id="board"></div>
+ <div class="pad" id="pad"></div>
+ <div class="legend"><span><i style="background:var(--given)"></i>given</span><span><i style="background:var(--place)"></i>placed</span><span><i style="background:var(--back)"></i>backtracked</span><span><i style="background:var(--bad)"></i>conflict</span></div>
+ </div>
+</div>
+<div class="card">
+ <div class="lbl">Puzzle source</div>
+ <div class="seg" id="srctabs"><button data-s="sample" class="on">📚 Puzzles</button><button data-s="cust">✏️ Custom puzzle</button></div>
+ <div id="p-sample" style="margin-top:10px"><select id="sample"></select></div>
+ <div id="p-cust" class="hide cpanel">
+  <div class="chead"><b>✏️ Build your own puzzle</b><span id="vstat" class="chip"></span></div>
+  <div class="prog"><i id="pbar"></i></div>
+  <div class="hint"><span><b>1</b>Tap a cell on the board</span><span><b>2</b>Type 1-9 (0 / ⌫ clears) or use the colour pad</span><span><b>3</b>Press <em>Solve &amp; visualize</em></span></div>
+  <div class="cnt"><b id="cnt">0</b> / 81 cells filled</div>
+  <div class="row"><button id="clear">🗑 Clear grid</button><button id="copy">📋 Copy as text</button></div>
+  <details><summary>📥 Paste a puzzle instead</summary>
+   <textarea id="paste" placeholder="Paste 81 cells — digits 1-9, blanks as 0 or ."></textarea>
+   <button id="load" style="width:100%;margin-top:6px">Load pasted text</button></details>
+ </div>
+ <div class="lbl">Algorithm</div>
+ <div class="seg" id="algo"><button data-a="naive" class="on">Plain backtracking</button><button data-a="mrv">Backtracking + MRV</button></div>
+ <div class="lbl">Search limit (max placements)</div>
+ <select id="limit"><option value="500000">500 thousand</option><option value="10000000">10 million</option><option value="100000000" selected>100 million (default)</option><option value="1000000000">1 billion (can be slow)</option></select>
+ <div id="inv"></div>
+ <button class="pri" id="solve" style="width:100%;margin-top:12px">▶ Solve &amp; visualize</button>
+ <div class="seg" id="tabs" style="margin-top:14px"><button data-t="viz" class="on">Step-by-step</button><button data-t="cmp">Compare algorithms</button></div>
+ <div id="viz">
+  <div id="info"></div>
+  <div id="player" class="hide">
+   <input type="range" id="slider" min="0" max="0" value="0">
+   <div class="player"><button id="rs">⏮</button><button id="pv">◀</button><button id="pl" class="pri">▶ Play</button><button id="nx">▶|</button></div>
+   <button id="fin" style="width:100%;margin-bottom:6px">⏭ Jump to solution</button>
+   <div class="lbl">Steps per frame: <span id="spv">1</span></div><input type="range" id="speed" min="1" max="500" value="1">
+   <div class="msg" id="stepmsg"></div>
+   <div class="stats"><div class="stat"><b id="sp">0</b><span>Placements so far</span></div><div class="stat"><b id="sb">0</b><span>Backtracks so far</span></div></div>
+  </div>
+ </div>
+ <div id="cmp" class="hide"></div>
+</div></div></div>
+<script>
+const SAMPLES={"Easy":"003020600900305001001806400008102900700000008006708200002609500800203009005010300",
+"Medium":"530070000600195000098000060800060003400803001700020006060000280000419005000080079",
+"Hard (slow for plain backtracking)":"400000805030000000000700000020000060000080400000010000000603070500200000104000000",
+"Hardest (Inkala)":"800000000003600000070090200050007000000045700000100030001000068008500010090000400",
+"Extreme — Easter Monster":"1.......2.9.4...5...6...7...5.9.3.......7.......85..4.7.....6...3...9.8...2.....1",
+"Extreme — Golden Nugget":".......39.....1..5..3.5.8....8.9...6.7...2...1..4.......9.8..5..2....6..4..7.....",
+"Extreme — 17 clues (brute-force breaker)":"..............3.85..1.2.......5.7.....4...1...9.......5......73..2.1........4...9",
+"Extreme — Norvig's hardest":"85...24..72......9..4.........1.7..23.5...9...4...........8..7..17..........36.4."};
+const NAMES={naive:"Plain backtracking (row-major)",mrv:"Backtracking + MRV forward checking"};
+const $=i=>document.getElementById(i),MAXREC=20000;
+let given=Array(81).fill(0),sel=-1,res=null,k=0,timer=null,algo='naive',tab='viz',cache={},src='sample';
+const bx=i=>((i/9|0)/3|0)*3+((i%9)/3|0);
+const units=(()=>{const u=[];for(let n=0;n<9;n++){const r=[],c=[],x=[];for(let j=0;j<9;j++){r.push(n*9+j);c.push(j*9+n);x.push(((n/3|0)*3+(j/3|0))*9+(n%3)*3+j%3)}u.push(r,c,x)}return u})();
+function conflicts(b){const bad=new Set();for(const u of units){const s={};for(const i of u)if(b[i])(s[b[i]]=s[b[i]]||[]).push(i);for(const v in s)if(s[v].length>1)s[v].forEach(i=>bad.add(i))}return bad}
+function parse(t){const cells=[...t].filter(ch=>!" \t\r\n|,+".includes(ch));if(cells.length!==81)throw Error(`Expected 81 cells, found ${cells.length}.`);
+ return cells.map(ch=>"0._*-".includes(ch)?0:"123456789".includes(ch)?+ch:(()=>{throw Error(`Invalid character '${ch}': use digits 1-9 and 0 or . for blanks.`)})())}
+function cands(b,i){let u=0;for(let j=0;j<9;j++){const r=(i/9|0)*9+j,c=j*9+i%9;u|=1<<b[r]|1<<b[c]}
+ const br=((i/9|0)/3|0)*3,bc=((i%9)/3|0)*3;for(let a=0;a<3;a++)for(let d=0;d<3;d++)u|=1<<b[(br+a)*9+bc+d];
+ u&=~1;return[1,2,3,4,5,6,7,8,9].filter(v=>!((u>>v)&1))}
+const PC=new Uint8Array(1024);for(let i=1;i<1024;i++)PC[i]=PC[i>>1]+(i&1);
+const BXT=new Uint8Array(81);for(let i=0;i<81;i++)BXT[i]=bx(i);
+let LIMIT=1e8,running=false,tok=null,solView=false;
+function solveAsync(g,strat,trace,tk,onProg){return new Promise(done=>{
+ const b=Int8Array.from(g),R=new Int16Array(9),C=new Int16Array(9),B=new Int16Array(9),empt=[];
+ for(let i=0;i<81;i++){if(b[i]){const t=1<<b[i];R[i/9|0]|=t;C[i%9]|=t;B[BXT[i]]|=t}else empt.push(i)}
+ const n=empt.length,cellAt=new Int8Array(n+1),maskAt=new Int16Array(n+1),lastV=new Int8Array(n+1),mrv=strat==='mrv',lim=LIMIT;
+ const o={solved:false,steps:[],p:0,bt:0,ch:0,ms:0,trunc:false,limit:false,grid:g.slice()};
+ let d=0,need=true,fin=false;
+ const log=(a,i,v,dd)=>{if(!trace)return;if(o.steps.length<MAXREC)o.steps.push([a,i,v,dd]);else o.trunc=true};
+ function work(){const t0=performance.now();let it=0;
+  while(!fin){
+   if(!(++it&2047)&&performance.now()-t0>25)break;
+   if(need){if(d===n){o.solved=true;fin=true;break}
+    let ci,m;
+    if(!mrv){ci=empt[d];m=~(R[ci/9|0]|C[ci%9]|B[BXT[ci]])&0x3FE}
+    else{let bn=10;ci=-1;m=0;for(let q=0;q<n;q++){const i=empt[q];if(b[i])continue;const mm=~(R[i/9|0]|C[i%9]|B[BXT[i]])&0x3FE,c=PC[mm];if(c<bn){bn=c;ci=i;m=mm;if(c<=1)break}}}
+    cellAt[d]=ci;maskAt[d]=m;lastV[d]=0;need=false}
+   const m=maskAt[d];
+   if(m===0){o.ch+=9-lastV[d];if(d===0){fin=true;break}
+    d--;const i=cellAt[d],v=lastV[d],t=1<<v;R[i/9|0]^=t;C[i%9]^=t;B[BXT[i]]^=t;b[i]=0;o.bt++;log(0,i,v,d);continue}
+   const low=m&-m,v=31-Math.clz32(low);maskAt[d]=m^low;o.ch+=v-lastV[d];lastV[d]=v;
+   if(o.p>=lim){o.limit=true;fin=true;break}
+   const i=cellAt[d];b[i]=v;R[i/9|0]|=low;C[i%9]|=low;B[BXT[i]]|=low;o.p++;log(1,i,v,d);d++;need=true}
+  o.ms+=performance.now()-t0;
+  if(fin){if(o.solved)o.grid=Array.from(b);done(o)}
+  else if(tk.stop){o.cancelled=true;done(o)}
+  else{onProg&&onProg(o.p);setTimeout(work,0)}}
+ work()})}
+function replay(n){const b=given.slice();for(let j=0;j<n;j++){const[a,i,v]=res.steps[j];b[i]=a?v:0}return b}
+
+function render(){
+ const bad=conflicts(given),board=res?(solView?res.grid:replay(k)):given,cur=res&&k&&!solView?res.steps[k-1]:null,selv=sel>=0?board[sel]:0;
+ [...$('board').children].forEach((td,i)=>{const r=i/9|0,c=i%9;td.textContent=board[i]||'';
+  let cl=['c'];if(bx(i)%2)cl.push('t1');td.style.setProperty('--h',board[i]*40);if(r%3==2&&r<8)cl.push('rb');if(c%3==2&&c<8)cl.push('cb');
+  if(bad.has(i))cl.push('conf');else if(cur&&cur[1]===i)cl.push(cur[0]?'cur':'back');
+  else if(given[i])cl.push('given');else if(board[i])cl.push('solv');
+  if(sel>=0&&!res){if(i===sel)cl.push('sel');else if(r===sel/9|0||c===sel%9||bx(i)===bx(sel))cl.push('peer');if(selv&&board[i]===selv&&i!==sel)cl.push('same')}
+  td.className=cl.join(' ')});
+ $('inv').innerHTML=bad.size?`<div class="msg err">Invalid entries: ${bad.size} cells repeat a digit in a row, column or box.</div>`:'';
+ $('solve').disabled=bad.size>0||running;const nf=given.filter(Boolean).length;$('cnt').textContent=nf;$('pbar').style.width=nf/81*100+'%';const vs=$('vstat');vs.textContent=bad.size?`⚠ ${bad.size} conflicts`:nf?'✓ No conflicts':'Empty grid';vs.className='chip '+(bad.size?'bad':nf?'ok':'');
+ for(let d=1;d<=9;d++){const n=given.filter(v=>v===d).length;$('pc'+d).textContent=Math.max(0,9-n);$('pc'+d).parentNode.classList.toggle('done',n>=9)}$('pad').classList.toggle('hide',src!=='cust');
+ $('player').classList.toggle('hide',!res||!res.steps.length&&false);
+ if(res){$('slider').max=res.steps.length;$('slider').value=solView?res.steps.length:k;
+  const placed=solView?res.p:res.steps.slice(0,k).filter(s=>s[0]).length;$('sp').textContent=placed.toLocaleString();$('sb').textContent=(solView?res.bt:k-placed).toLocaleString();
+  let m,cls='';
+  if(!cur)m='Initial puzzle. The algorithm has not made any decision yet.';
+  else{const[a,i,v,d]=cur,rc=`R${(i/9|0)+1}C${i%9+1}`;
+   if(a){const pre=replay(k-1);m=`Step ${k}: place <b>${v}</b> at ${rc} (legal candidates there: [${cands(pre,i).join(', ')}]). Constraints checked — still consistent. Depth ${d+1}.`}
+   else{m=`Step ${k}: <b>BACKTRACK</b> — removed ${v} from ${rc}; no completion exists beneath that choice.`;cls='warn'}}
+  if(k===res.steps.length&&res.solved&&!res.trunc){m+=' <br><b>Solved — every row, column and 3×3 box contains 1-9.</b>';cls='ok'}
+  if(solView){m=`<b>Final solution.</b> The full search used ${res.p.toLocaleString()} placements and ${res.bt.toLocaleString()} backtracks; only the first ${MAXREC.toLocaleString()} steps are replayable.`;cls='ok'}
+  $('stepmsg').innerHTML=m;$('stepmsg').className='msg '+cls;
+  let info=res.limit?`<div class="msg warn">This algorithm hit the ${LIMIT.toLocaleString()}-placement search limit without finishing — raise the Search limit or try MRV.</div>`
+   :!res.solved?`<div class="msg err">This puzzle has no solution (the search exhausted every possibility).</div>`
+   :`<div class="msg">${NAMES[algo]}: <b>${res.p.toLocaleString()}</b> placements, <b>${res.bt.toLocaleString()}</b> backtracks, <b>${res.ch.toLocaleString()}</b> constraint checks, <b>${res.ms.toFixed(1)} ms</b>.</div>`;
+  if(res.trunc)info+=`<div class="msg" style="font-size:12px">Only the first ${MAXREC.toLocaleString()} steps are recorded for replay — press ⏭ Jump to solution to see the final grid.</div>`;
+  $('info').innerHTML=info;
+ }else $('info').innerHTML='';
+}
+function pause(){clearInterval(timer);timer=null;$('pl').textContent='▶ Play'}
+function reset(){pause();res=null;k=0;cache={};render();if(tab==='cmp')compare()}
+function setK(n){solView=false;k=Math.max(0,Math.min(res.steps.length,n));render()}
+function play(){if(timer)return pause();if(k>=res.steps.length)k=0;$('pl').textContent='⏸ Pause';
+ timer=setInterval(()=>{k=Math.min(res.steps.length,k+ +$('speed').value);render();if(k>=res.steps.length)pause()},50)}
+function setCell(d){if(sel<0||running)return;if(src!=='cust')setSrc('cust');if(res){res=null;k=0;pause()}given[sel]=d;cache={};render();if(tab==='cmp')compare()}
+async function run(){pause();if(conflicts(given).size||running)return;running=true;tok={stop:false};res=null;k=0;solView=false;setTab('viz');render();
+ const prog=p=>$('info').innerHTML=`<div class="msg">⏳ Searching… <b>${p.toLocaleString()}</b> placements <button id="cancel" style="padding:3px 10px;margin-left:8px">Cancel</button></div>`;prog(0);
+ const r=await solveAsync(given,algo,true,tok,prog);running=false;
+ if(r.cancelled){render();return}res=r;render()}
+let cmpId=0;
+async function compare(){const key=given.join('')+'|'+LIMIT,my=++cmpId,g=given.slice();
+ if(conflicts(g).size){$('cmp').innerHTML='<div class="msg err">Fix the highlighted conflicts first.</div>';return}
+ const rs=[];
+ for(const a of Object.keys(NAMES)){let r=cache[key+a];
+  if(!r){r=await solveAsync(g,a,false,{stop:false},p=>{if(my===cmpId)$('cmp').innerHTML=`<div class="msg">⏳ ${NAMES[a]}: <b>${p.toLocaleString()}</b> placements…</div>`});
+   if(my!==cmpId)return;cache[key+a]=r}rs.push(r)}
+ const L=n=>n.toLocaleString(),mx=f=>Math.max(1,...rs.map(f)),col=['#8b8df5','#d946ef'];
+ const st=r=>r.solved?'Yes':r.limit?'Step limit':'No solution';
+ let h=`<table><tr><th>Algorithm</th><th>Solved</th><th>Place</th><th>Back</th><th>Checks</th><th>ms</th></tr>`+
+  rs.map((r,i)=>`<tr><td>${i?'MRV':'Plain'}</td><td>${st(r)}</td><td>${L(r.p)}</td><td>${L(r.bt)}</td><td>${L(r.ch)}</td><td>${r.ms.toFixed(2)}</td></tr>`).join('')+'</table>';
+ for(const[lab,f]of[['Placements',r=>r.p],['Backtracks',r=>r.bt]]){h+=`<div class="bar"><div class="t">${lab}</div>`+
+  rs.map((r,i)=>`<div class="b" style="width:${Math.max(1,f(r)/mx(f)*100)}%;background:${col[i]}">${i?'MRV':'Plain'} · ${L(f(r))}</div>`).join('')+'</div>'}
+ if(rs.every(r=>r.solved)&&rs[0].grid.join('')===rs[1].grid.join(''))h+='<div class="msg ok">Both algorithms reached the same solution; they differ only in effort.</div>';
+ h+='<div class="msg"><b>Why the difference?</b> Plain backtracking blindly takes the next empty cell, so it can explore huge dead branches. MRV always branches on the most constrained cell and spots a cell with no legal digit immediately, pruning those branches early.</div>';
+ $('cmp').innerHTML=h}
+function setSrc(s){src=s;document.querySelectorAll('#srctabs button').forEach(b=>b.classList.toggle('on',b.dataset.s===s));
+ $('p-sample').classList.toggle('hide',s!=='sample');$('p-cust').classList.toggle('hide',s!=='cust');
+ if(s==='sample')loadGrid(parse(SAMPLES[$('sample').value]));else{pause();res=null;k=0;$('paste').value=given.join('').replace(/0/g,'.');render()}}
+function setTab(t){tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ $('viz').classList.toggle('hide',t!=='viz');$('cmp').classList.toggle('hide',t!=='cmp');if(t==='cmp')compare()}
+function loadGrid(g){pause();if(tok)tok.stop=true;solView=false;given=g;res=null;k=0;sel=-1;cache={};$('paste').value=g.join('').replace(/0/g,'.');render();if(tab==='cmp')compare()}
+
+(function init(){
+ const bd=$('board');for(let i=0;i<81;i++){const d=document.createElement('div');d.onclick=()=>{sel=i;render()};bd.appendChild(d)}
+ for(const n in SAMPLES)$('sample').add(new Option(n,n));
+ for(let d=1;d<=9;d++){const b=document.createElement('button');b.style.setProperty('--h',d*40);b.innerHTML=`${d}<small id="pc${d}">9</small>`;b.onclick=()=>setCell(d);$('pad').appendChild(b)}
+ const e=document.createElement('button');e.textContent='⌫';e.style.setProperty('--h',0);e.onclick=()=>setCell(0);$('pad').appendChild(e);
+ document.querySelectorAll('#srctabs button').forEach(b=>b.onclick=()=>setSrc(b.dataset.s));
+ $('sample').onchange=e=>loadGrid(parse(SAMPLES[e.target.value]));
+ $('clear').onclick=()=>loadGrid(Array(81).fill(0));
+ $('load').onclick=()=>{try{loadGrid(parse($('paste').value))}catch(x){$('inv').innerHTML=`<div class="msg err">${x.message}</div>`}};
+ $('copy').onclick=()=>{const t=given.join('');navigator.clipboard&&navigator.clipboard.writeText(t).catch(()=>{});$('paste').value=t.replace(/0/g,'.');$('copy').textContent='✅ Copied';setTimeout(()=>$('copy').textContent='📋 Copy as text',1200)};
+ document.querySelectorAll('#algo button').forEach(b=>b.onclick=()=>{algo=b.dataset.a;document.querySelectorAll('#algo button').forEach(x=>x.classList.toggle('on',x===b));if(res)run()});
+ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
+ $('solve').onclick=run;$('info').onclick=e=>{if(e.target.id==='cancel'&&tok)tok.stop=true};
+ $('limit').onchange=e=>{LIMIT=+e.target.value;cache={};if(tab==='cmp')compare()};
+ $('fin').onclick=()=>{pause();if(!res)return;if(res.solved&&res.trunc){solView=true;render()}else setK(res.steps.length)};$('rs').onclick=()=>{pause();setK(0)};$('pv').onclick=()=>{pause();setK(k-1)};$('nx').onclick=()=>{pause();setK(k+1)};$('pl').onclick=play;
+ $('slider').oninput=e=>{pause();setK(+e.target.value)};$('speed').oninput=e=>$('spv').textContent=e.target.value;
+ $('theme').onclick=()=>{const r=document.documentElement,dark=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=dark?'light':'dark';$('theme').textContent=dark?'🌙 Dark mode':'☀️ Light mode'};
+ document.addEventListener('keydown',e=>{if(e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT')return;
+  if(/^[0-9]$/.test(e.key))setCell(+e.key);else if(e.key==='Backspace'||e.key==='Delete')setCell(0);
+  else if(res&&e.key==='ArrowRight')setK(k+1);else if(res&&e.key==='ArrowLeft')setK(k-1);
+  else if(!res&&sel>=0&&e.key.startsWith('Arrow')){const dx={ArrowLeft:-1,ArrowRight:1}[e.key]||0,dy={ArrowUp:-1,ArrowDown:1}[e.key]||0;
+   sel=Math.max(0,Math.min(8,sel/9+dy|0))*9+Math.max(0,Math.min(8,sel%9+dx));e.preventDefault();render()}});
+ if(matchMedia('(prefers-color-scheme:dark)').matches)$('theme').textContent='☀️ Light mode';
+ loadGrid(parse(SAMPLES.Easy));
+})();
+</script></body></html>
